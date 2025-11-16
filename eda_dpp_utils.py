@@ -29,7 +29,7 @@ def preProcessing():
     return df, df_unnormalised, num_cols
 
 
-def summarStats_corrHeatmap(df, df_unnormalised, num_cols):
+def summaryStats_corrHeatmap(df, df_unnormalised, num_cols):
     exc = ['hour', 'weekday', 'month']
     numericCols = [c for c in df_unnormalised.select_dtypes(include='number').columns if c not in exc]
     summary_stats = df_unnormalised[numericCols].describe().T
@@ -44,7 +44,7 @@ def summarStats_corrHeatmap(df, df_unnormalised, num_cols):
     plt.yticks(rotation=0)
     plt.tight_layout()
     plt.show()
-    return
+    return summary_stats, corr_matrix
 
 
 def normalisedTimeSeriesPlots(df, num_cols):
