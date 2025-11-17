@@ -17,9 +17,8 @@ def preProcessing():
 
     df.replace(-200, np.nan, inplace=True) 
     num_cols = df.select_dtypes(include=np.number).columns
-    df[num_cols] = df[num_cols].replace(-200, np.nan) 
-    df[num_cols] = (df[num_cols].ffill() + df[num_cols].bfill()) / 2
-
+    df[num_cols] = df[num_cols].replace(-200, np.nan)
+    df[num_cols] = df[num_cols].fillna(df[num_cols].mean())
     df['timestamp'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
     df.set_index('timestamp', inplace=True)
     df.drop(columns=['Date','Time'], inplace=True)
@@ -58,6 +57,29 @@ def normalisedTimeSeriesPlots(df, num_cols):
     plt.tight_layout()
     plt.show()
     return
+
+def plot_moving_avg(df, feature, targets, window):
+    # Pre-compute moving average of the feature
+    ma_feature = df[feature].rolling(window=window, min_periods=1).mean()
+    for tgt in targets:
+        plt.figure(figsize=(15, 5))
+
+        # Plot feature MA
+        plt.plot(df.index, ma_feature, label=f'{feature} (MA)', linewidth=1.4)
+
+        # Plot target MA
+        ma_tgt = df[tgt].rolling(window=window, min_periods=1).mean()
+        plt.plot(df.index, ma_tgt, label=f'{tgt} (MA)', linewidth=1.4)
+
+        # Titles/labels
+        plt.title(f"Moving Average ({window}-point): {feature} vs {tgt}")
+        plt.xlabel("Time")
+        plt.ylabel("Smoothed Value")
+        plt.legend(loc="upper right")
+        plt.tight_layout()
+        plt.show()
+    return
+
 
 
 def scatter_targetNontarget(df, targets):
