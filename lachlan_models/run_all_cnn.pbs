@@ -8,7 +8,7 @@
 #PBS -e ./error.txt
 #PBS -o ./cnn_output.txt
 
-# cd $PBS_O_WORKDIR
+cd $PBS_O_WORKDIR
 
 export PATH=/srv/scratch/z5419231/miniconda/bin:$PATH
 
