@@ -5,10 +5,6 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import precision_recall_curve, average_precision_score
 
-df, df_unnormalised, num_cols = eda_dpp_utils.preProcessing()
-y = [c for c in df.columns if '(GT)' in c]
-X = [c for c in df.columns if '(GT)' not in c]
-
 # Modified Z-Score for anomaly labeling (ground truth)
 def modified_z_score(y, threshold=3.5):
     m = np.median(y)
