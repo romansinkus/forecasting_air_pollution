@@ -5,3 +5,6 @@ conda activate lachlan_models_airpoll
 pip install torch
 pip install numpy pandas matplotlib seaborn scikit-learn
 pip install tqdm
+pip install ucimlrepo
+
+pip install tabulate
