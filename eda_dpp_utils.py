@@ -19,14 +19,15 @@ def preProcessing():
     df.replace(-200, np.nan, inplace=True) 
     num_cols = df.select_dtypes(include=np.number).columns
     df[num_cols] = df[num_cols].replace(-200, np.nan)
-    df[num_cols] = df[num_cols].fillna(df[num_cols].mean())
+    df_unclean = df[num_cols].copy()
     df['timestamp'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
     df.set_index('timestamp', inplace=True)
     df.drop(columns=['Date','Time'], inplace=True)
+    df[num_cols] = df[num_cols].fillna(df[num_cols].mean())
     df['hour'], df['weekday'], df['month'] = df.index.hour, df.index.weekday, df.index.month
     df_unnormalised = df.copy()
     df[num_cols] = (df[num_cols] - df[num_cols].mean()) / df[num_cols].std()
-    return df, df_unnormalised, num_cols
+    return df, df_unnormalised, num_cols, df_unclean
 
 
 def summaryStats(df_unnormalised):
