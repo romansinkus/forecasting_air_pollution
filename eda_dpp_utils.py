@@ -23,31 +23,60 @@ def preProcessing():
     df['timestamp'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
     df.set_index('timestamp', inplace=True)
     df.drop(columns=['Date','Time'], inplace=True)
+    df['hour'], df['weekday'], df['month'] = df.index.hour, df.index.weekday, df.index.month
     df_unnormalised = df.copy()
     df[num_cols] = (df[num_cols] - df[num_cols].mean()) / df[num_cols].std()
-    df['hour'], df['weekday'], df['month'] = df.index.hour, df.index.weekday, df.index.month
     return df, df_unnormalised, num_cols
 
 
-def summaryStats_corrHeatmap(df, df_unnormalised, num_cols):
+def summaryStats(df_unnormalised):
     exc = ['hour', 'weekday', 'month']
     numericCols = [c for c in df_unnormalised.select_dtypes(include='number').columns if c not in exc]
     summary_stats = df_unnormalised[numericCols].describe().T
     summary_stats = summary_stats.round(4)
     print(tabulate(summary_stats, headers='keys', tablefmt='psql'))
+    return summary_stats
 
-    corr_matrix = df[num_cols].corr()
-    plt.figure(figsize=(len(num_cols)*0.7 + 5, len(num_cols)*0.7 + 5))
-    sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap='coolwarm', center=0, square=True, cbar_kws={'shrink': 0.8})
-    plt.title('Correlation Matrix', fontsize=16)
+def corrHeatmaps(df, targets):
+    all_numeric = df.select_dtypes(include='number').columns.tolist()
+
+    non_targets = [c for c in all_numeric if c not in targets]
+
+    corr_non = df[non_targets].corr()
+
+    plt.figure(figsize=(len(non_targets)*0.5 + 5, len(non_targets)*0.5 + 5))
+    sns.heatmap(
+        corr_non, annot=True, fmt=".2f",
+        cmap='coolwarm', center=0, square=True,
+        cbar_kws={'shrink': 0.8}
+    )
+    plt.title("Non-Targets vs Non-Targets Correlation", fontsize=16)
     plt.xticks(rotation=45, ha='right')
     plt.yticks(rotation=0)
     plt.tight_layout()
     plt.show()
-    return summary_stats, corr_matrix
+
+    corr_target_non = df[targets + non_targets].corr().loc[targets, non_targets]
+
+    plt.figure(figsize=(len(non_targets)*0.5 + 5, len(targets)*0.5 + 4))
+    sns.heatmap(
+        corr_target_non, annot=True, fmt=".2f",
+        cmap='coolwarm', center=0, square=True,
+        cbar_kws={'shrink': 0.8}
+    )
+    plt.title("Targets vs Non-Targets Correlation", fontsize=16)
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+    plt.show()
+
+    return corr_non, corr_target_non
 
 
 def normalisedTimeSeriesPlots(df, num_cols):
+    exc = ['hour', 'weekday', 'month']
+    numericCols = [c for c in df.select_dtypes(include='number').columns if c not in exc]
+    df = df[numericCols]
     plt.figure(figsize=(15, len(num_cols)*2))
     for i, col in enumerate(num_cols, 1):
         plt.subplot(len(num_cols), 1, i)

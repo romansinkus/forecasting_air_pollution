@@ -1,12 +1,9 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-def normalTransform(df, x):
-    df[x] = 1/np.sqrt(2*np.pi*df[x].std()) * np.exp(- np.power((df[x] - df[x].mean()) /(df[x].std()), 2) / 2)
-    return df
-
-original_targets = ['CO(GT)', 'NMHC(GT)', 'C6H6(GT)', 'NOx(GT)', 'NO2(GT)']
+targets = ['CO(GT)', 'NMHC(GT)', 'C6H6(GT)', 'NOx(GT)', 'NO2(GT)']
 
 def addLagFeatures(df, lags, targets):
     for tgt in targets:
@@ -23,13 +20,11 @@ def addMovingAverages(df, windows, targets):
 def LagMACorrelations(df, targets):
     rows = []
     for tgt in targets:
-        # Find MA features for this target
         ma_cols = [c for c in df.columns if c.startswith(f'{tgt}_MA')]
         for col in ma_cols:
             corr = df[[tgt, col]].corr().iloc[0,1]
             rows.append((tgt, col, corr))
         
-        # Find lag features for this target
         lag_cols = [c for c in df.columns if c.startswith(f'{tgt}_lag')]
         for col in lag_cols:
             corr = df[[tgt, col]].corr().iloc[0,1]
@@ -37,33 +32,75 @@ def LagMACorrelations(df, targets):
     
     return pd.DataFrame(rows, columns=['target','feature','correlation'])
 
-def plot_lag_scatter(df, targets, lags):
-    """
-    Creates scatter plots of each target vs each of its lag features.
-    Layout: one row per target, one column per lag.
-    """
+def plot_lag_and_time_scatter(df, targets, lags):
 
-    n_targets = len(targets)
-    n_lags = len(lags)
+    time_feats = ['hour', 'weekday', 'month']
 
-    fig, axes = plt.subplots(n_targets, n_lags, figsize=(5*n_lags, 4*n_targets), squeeze=False)
+    for tgt in targets:
+        lag_cols = [f"{tgt}_lag{lag}" for lag in lags if f"{tgt}_lag{lag}" in df.columns]
+        plot_cols = lag_cols + [feat for feat in time_feats if feat in df.columns]
 
-    for i, tgt in enumerate(targets):
-        for j, lag in enumerate(lags):
-            ax = axes[i][j]
+        if not plot_cols:
+            print(f"No features to plot for target {tgt}.")
+            continue
 
-            lag_col = f"{tgt}_lag{lag}"
-            if lag_col not in df.columns:
-                ax.set_title(f"{lag_col} missing")
-                ax.axis("off")
-                continue
+        n_cols = len(plot_cols)
+        fig, axes = plt.subplots(1, n_cols, figsize=(5*n_cols, 4), squeeze=False)
 
-            # Scatter plot
-            ax.scatter(df[lag_col], df[tgt], alpha=0.4, s=10)
-            ax.set_xlabel(lag_col)
+        for j, feat in enumerate(plot_cols):
+            ax = axes[0][j]
+            sns.scatterplot(data=df, x=feat, y=tgt, alpha=0.5, s=20, ax=ax)
+            ax.set_title(f"{tgt} vs {feat}")
+            ax.set_xlabel(feat)
             ax.set_ylabel(tgt)
-            ax.set_title(f"{tgt} vs {lag_col}")
 
-    plt.tight_layout()
-    plt.show()
-    return 
+        plt.tight_layout()
+        plt.show()
+    return
+
+def bin_features(df):
+    # hr: bins of 6 (0-5, 6-11, 12-17, 18-23)
+    hour_bins = [0, 6, 12, 18, 24]
+    hour_labels = ['0-5','6-11','12-17','18-23']
+    binned_features = ['hour_bin', 'is_sunday', 'month_bin']
+    df['hour_bin'] = pd.cut(df['hour'], bins=hour_bins, labels=hour_labels, right=False)
+
+    # weekday: Sunday or not Sunday
+    df['is_sunday'] = (df['weekday'] == 6).astype(int)  # 0 = monday
+
+    # month: bins of 4 months (1-4, 5-8, 9-12)
+    month_bins = [1,5,9,13]
+    month_labels = ['Jan-Apr','May-Aug','Sep-Dec']
+    df['month_bin'] = pd.cut(df['month'], bins=month_bins, labels=month_labels, right=False)
+    return df, binned_features
+
+def plot_binned_features(df, targets, binned_features):
+    for feat in binned_features:
+        for tgt in targets:
+            plt.figure(figsize=(6,4))
+            sns.boxplot(x=feat, y=tgt, data=df)
+            plt.title(f'{tgt} vs {feat}')
+            plt.xlabel(feat)
+            plt.ylabel(tgt)
+            plt.show()
+    return
+
+def binned_correlation(df, targets, binned_features):
+    corr_dict = {}
+    
+    for feat in binned_features:
+        # One-hot encode categorical/binned features (skip binary like is_sunday)
+        if df[feat].nunique() > 2:
+            feat_dummies = pd.get_dummies(df[feat], prefix=feat)
+        else:
+            feat_dummies = df[[feat]]
+        
+        for col in feat_dummies.columns:
+            for tgt in targets:
+                corr = feat_dummies[col].corr(df[tgt])
+                corr_dict[(col, tgt)] = corr
+                
+    # Convert to DataFrame
+    corr_df = pd.DataFrame.from_dict(corr_dict, orient='index', columns=['correlation'])
+    corr_df.index = pd.MultiIndex.from_tuples(corr_df.index, names=['feature','target'])
+    return corr_df
