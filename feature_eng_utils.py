@@ -68,21 +68,33 @@ def bin_features(df):
     # weekday: Sunday or not Sunday
     df['is_sunday'] = (df['weekday'] == 6).astype(int)  # 0 = monday
 
-    # month: bins of 4 months (1-4, 5-8, 9-12)
-    month_bins = [1,5,9,13]
-    month_labels = ['Jan-Apr','May-Aug','Sep-Dec']
+    # month: bins of 3 months (1-3, 4-6, 7-9, 10-12)
+    month_bins = [1,4,7,10,13]
+    month_labels = ['Jan-Mar','Apr-Jun','July-Sep', 'Oct-Dec']
     df['month_bin'] = pd.cut(df['month'], bins=month_bins, labels=month_labels, right=False)
     return df, binned_features
 
 def plot_binned_features(df, targets, binned_features):
     for feat in binned_features:
-        for tgt in targets:
-            plt.figure(figsize=(6,4))
-            sns.boxplot(x=feat, y=tgt, data=df)
-            plt.title(f'{tgt} vs {feat}')
-            plt.xlabel(feat)
-            plt.ylabel(tgt)
-            plt.show()
+        n_targets = len(targets)
+        n_cols = 2  # number of columns in the subplot grid
+        n_rows = (n_targets + n_cols - 1) // n_cols  # ceil division for rows
+
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 4*n_rows))
+        axes = axes.flatten()  # flatten for easy indexing
+
+        for i, tgt in enumerate(targets):
+            sns.boxplot(x=feat, y=tgt, data=df, ax=axes[i])
+            axes[i].set_title(f'{tgt} vs {feat}')
+            axes[i].set_xlabel(feat)
+            axes[i].set_ylabel(tgt)
+
+        # Remove empty subplots if any
+        for j in range(i+1, len(axes)):
+            fig.delaxes(axes[j])
+
+        plt.tight_layout()
+        plt.show()
     return
 
 def binned_correlation(df, targets, binned_features):
