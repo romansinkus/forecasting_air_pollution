@@ -1,0 +1,32 @@
+#!/bin/bash
+
+#PBS -l select=1:ncpus=4:ngpus=1:mem=4gb
+#PBS -l walltime=02:00:00
+#PBS -M z5419231@ad.unsw.edu.au
+#PBS -m ae
+#PBS -j oe
+#PBS -e ./error.txt
+#PBS -o ./cnnlstm_output.txt
+
+cd $PBS_O_WORKDIR
+
+export PATH=/srv/scratch/z5419231/miniconda/bin:$PATH
+
+source /srv/scratch/z5419231/miniconda/etc/profile.d/conda.sh
+
+conda activate lachlan_models_airpoll &&
+
+echo "Running CNN-LSTM horizons..."
+
+for H in 1 6 12 24
+do
+    echo "Horizon = $H"
+    python train_cnn_lstm.py \
+        --window_size 24 \
+        --horizon $H \
+        --epochs 20 \
+        --batch_size 64 \
+        --save_path cnn_lstm_h${H}.pt
+done
+
+echo "CNN-LSTM all horizons complete."
