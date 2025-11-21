@@ -103,9 +103,18 @@ def get_dataloaders(window_size=24, horizon=1, batch_size=64, val_fraction=0.2):
     # regression targets
     reg_targets = ['CO(GT)', 'NMHC(GT)', 'C6H6(GT)', 'NOx(GT)', 'NO2(GT)']
 
-    # classification target: bins of CO(GT)
+    ## classification target: bins of CO(GT)
+    #df['CO_class'] = pd.cut(
+    #    df['CO(GT)'].astype(float),
+    #    bins=[-np.inf, 1.5, 2.5, np.inf],
+    #    labels=[0, 1, 2]
+    #).astype(int)
+
+    # classification binning must be done on UNNORMALISED CO(GT)
+    raw_CO = df_unnormalised['CO(GT)'].astype(float)
+
     df['CO_class'] = pd.cut(
-        df['CO(GT)'].astype(float),
+        raw_CO,
         bins=[-np.inf, 1.5, 2.5, np.inf],
         labels=[0, 1, 2]
     ).astype(int)
