@@ -18,7 +18,6 @@ conda activate lachlan_models_airpoll &&
 
 echo "Running CNN horizons..."
 
-<<<<<<< HEAD
 #for H in 1 6 12 24
 #do
 #    echo "Horizon $H"
@@ -27,12 +26,5 @@ echo "Running CNN horizons..."
 #python train_cnn.py --window_size 24 --horizon 1 --epochs 20 --batch_size 64 --lambda_reg 1.0 --lambda_cls 0.1 --save_path cnn_h${H}.pt
 python train_cnn.py --horizon 1 --epochs 60 --lr 1e-3 --lambda_reg 1.0 --lambda_cls 0.1
 
-=======
-for H in 1 6 12 24
-do
-    echo "Horizon $H"
-    python train_cnn.py --window_size 24 --horizon $H --epochs 20 --batch_size 64 --save_path cnn_h${H}.pt
-done
->>>>>>> parent of ad9075d (bug fixing)
 
 echo "All horizons complete."
