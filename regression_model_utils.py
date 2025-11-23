@@ -40,14 +40,15 @@ def train_forecast_random_forest(df, target, targets, horizons=[1,6,12,24],
     print(f"Training RMSE for {target} = {train_rmse:.3f}")
 
     # Prepare grids
+    # Prepare grids for residuals and predicted vs observed
     n_h = len(horizons)
-    n_cols = 2
-    n_rows = int(np.ceil(n_h / n_cols))
-    
-    fig_res, axes_res = plt.subplots(n_rows, n_cols, figsize=(20, n_rows*8), sharey=True)
+    n_rows = 1
+    n_cols = n_h  # 1 row, as many columns as horizons
+
+    fig_res, axes_res = plt.subplots(n_rows, n_cols, figsize=(5*n_cols, 6), sharey=True)
     axes_res = axes_res.flatten()
-    
-    fig_ts, axes_ts = plt.subplots(n_rows, n_cols, figsize=(16, n_rows*4))
+
+    fig_ts, axes_ts = plt.subplots(n_rows, n_cols, figsize=(5*n_cols, 4), sharey=False)
     axes_ts = axes_ts.flatten()
 
     for i, h in enumerate(horizons):
@@ -97,7 +98,12 @@ def train_forecast_random_forest(df, target, targets, horizons=[1,6,12,24],
         axes_res[i].set_title(f"{h}h ahead Residuals\n")
         axes_res[i].set_xlabel("Time")
         axes_res[i].set_ylabel("Residual")
-
+        
+        # Rotate x-axis labels
+        for tick in axes_res[i].get_xticklabels():
+            tick.set_rotation(45)
+            tick.set_ha('right')
+        
         axes_res[i].text(
             0.95, 0.95,
             f"RF RMSE={rmse:.3f}\n",
@@ -107,6 +113,7 @@ def train_forecast_random_forest(df, target, targets, horizons=[1,6,12,24],
             bbox=dict(facecolor='white', alpha=0.7, edgecolor='gray')
         )
 
+
         # -------------------------
         # Predicted vs Observed in grid
         # -------------------------
@@ -115,8 +122,11 @@ def train_forecast_random_forest(df, target, targets, horizons=[1,6,12,24],
         axes_ts[i].set_title(f"{h}h ahead Predicted vs Observed")
         axes_ts[i].set_xlabel("Time")
         axes_ts[i].set_ylabel(target)
-        axes_ts[i].legend(framealpha=0.5)
         axes_ts[i].grid(True)
+
+        for tick in axes_ts[i].get_xticklabels():
+            tick.set_rotation(45)
+            tick.set_ha('right')
 
     # Hide empty subplots if any
     for j in range(i+1, len(axes_res)):
@@ -124,7 +134,7 @@ def train_forecast_random_forest(df, target, targets, horizons=[1,6,12,24],
         axes_ts[j].axis('off')
 
     plt.tight_layout(pad=3.0)
-    fig_res.suptitle(f"{target} Residuals per Horizon", fontsize=16)
+    fig_res.suptitle(f"{target} Residuals per Horizon", y=1.05, fontsize=16)
     fig_ts.suptitle(f"{target} Predicted vs Observed per Horizon", y=1.02, fontsize=16)
     plt.show()
 
