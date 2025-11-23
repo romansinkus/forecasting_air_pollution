@@ -18,7 +18,8 @@ from lachlan_models.evaluation import (
     naive_baseline,
     naive_baseline_classification,
     plot_residuals,
-    plot_timeseries
+    plot_timeseries,
+    plot_confusion_matrix
 )
 
 # =====================================================================
@@ -254,6 +255,19 @@ def main():
     plot_regression_scatter(y_true_reg, y_pred_reg, meta["reg_targets"], OUTPUT_DIR, prefix)
     plot_residuals(y_true_reg, y_pred_reg, meta["reg_targets"], OUTPUT_DIR, prefix)
     plot_timeseries(y_true_reg, y_pred_reg, meta["reg_targets"], OUTPUT_DIR, prefix)
+
+    # ============================================================
+    # CONFUSION MATRIX
+    # ============================================================
+    class_names = [str(c) for c in range(meta["num_classes"])]
+    plot_confusion_matrix(
+        y_true_cls,
+        y_pred_cls,
+        class_names,
+        OUTPUT_DIR,
+        prefix="cnn"
+    )
+
 
     # ============================================================
     # SAVE MODEL

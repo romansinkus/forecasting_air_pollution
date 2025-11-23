@@ -100,3 +100,21 @@ def plot_timeseries(y_true, y_pred, target_names, save_dir, prefix, max_points=1
         plt.tight_layout()
         plt.savefig(os.path.join(save_dir, f"{prefix}_timeseries_{tname}.png"))
         plt.close()
+
+# ================================================================
+# CONFUSION MATRIX
+# ================================================================
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+
+def plot_confusion_matrix(y_true, y_pred, class_names, save_dir, prefix):
+    ensure_dir(save_dir)
+
+    cm = confusion_matrix(y_true, y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
+
+    plt.figure(figsize=(6, 5))
+    disp.plot(cmap="Blues", values_format="d")
+    plt.title(f"Confusion Matrix ({prefix})")
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_dir, f"{prefix}_confusion_matrix.png"))
+    plt.close()
