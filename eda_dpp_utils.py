@@ -23,7 +23,8 @@ def preProcessing():
     df['timestamp'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
     df.set_index('timestamp', inplace=True)
     df.drop(columns=['Date','Time'], inplace=True)
-    df[num_cols] = df[num_cols].fillna(df[num_cols].mean())
+    other_cols = [c for c in num_cols if c != 'NMHC(GT)']
+    df[other_cols] = df[other_cols].fillna(df[other_cols].mean())
     df['hour'], df['weekday'], df['month'] = df.index.hour, df.index.weekday, df.index.month
     df_unnormalised = df.copy()
     df[num_cols] = (df[num_cols] - df[num_cols].mean()) / df[num_cols].std()
