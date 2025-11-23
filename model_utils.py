@@ -197,32 +197,48 @@ def plotResiduals(lasso_model, X_test, y_test, selected_features=None, target_na
     - y_test: test target (Series)
     - le: fitted LabelEncoder to decode class integers
 """
-def classificationSplitSets(df, target_col='CO(GT)'):
-    df = df.copy().reset_index().rename(columns={'index': 'timestamp'})
-    
-    # Discretize target into 3 classes
-    bins = [-np.inf, 1.5, 2.5, np.inf]
-    labels = ['low', 'mid', 'high']
-    df['CO_class'] = pd.cut(df[target_col], bins=bins, labels=labels)
-    
-    # Split train/test by year
-    train_df = df[df['timestamp'].dt.year < 2005]
-    test_df  = df[df['timestamp'].dt.year == 2005]
-    
-    # Features and target
-    X_train = train_df.drop(columns=[target_col, 'CO_class', 'timestamp'])
-    X_test  = test_df.drop(columns=[target_col, 'CO_class', 'timestamp'])
-    
+def classificationSplit(df, target_col):
+    """
+    Generic temporal classification split for any t+k target column.
+
+    Parameters:
+        df: DataFrame (must contain timestamp + target_col)
+        target_col: one of ["CO_class_t1", "CO_class_t6", "CO_class_t12", "CO_class_t24"]
+
+    Returns:
+        X_train, X_test, y_train, y_test, feature_names, label_encoder
+    """
+
+    df = df.copy().reset_index().rename(columns={"index": "timestamp"})
+
+    # remove rows that cannot be used (shift caused NaN)
+    df = df.dropna(subset=[target_col])
+
+    # Temporal split (required by project)
+    train_df = df[df["timestamp"].dt.year < 2005]
+    test_df  = df[df["timestamp"].dt.year == 2005]
+
+    # Drop ALL CO targets to ensure no leakage
+    drop_cols = [
+        "CO(GT)",
+        "CO_class_t1", "CO_class_t6", "CO_class_t12", "CO_class_t24",
+        "timestamp"
+    ]
+
+    X_train = train_df.drop(columns=drop_cols, errors="ignore")
+    X_test  = test_df.drop(columns=drop_cols, errors="ignore")
+
+    # Encode the classification target
     le = LabelEncoder()
-    y_train = le.fit_transform(train_df['CO_class'])
-    y_test  = le.transform(test_df['CO_class'])
-    
+    y_train = le.fit_transform(train_df[target_col])
+    y_test  = le.transform(test_df[target_col])
+
     # Scale numeric features
-    numeric_cols = X_train.select_dtypes(include=np.number).columns
+    numeric_cols = X_train.select_dtypes(include=np.number).columns.tolist()
     scaler = StandardScaler()
     X_train[numeric_cols] = scaler.fit_transform(X_train[numeric_cols])
     X_test[numeric_cols]  = scaler.transform(X_test[numeric_cols])
-    
+
     return X_train, X_test, y_train, y_test, X_train.columns.tolist(), le
 
 # Discretize CO(GT) into 3 classes
@@ -298,3 +314,20 @@ def logisticLasso(X_train, y_train, X_test, y_test, alphas=None, target_name=Non
     
     return best_model, coef_df, y_pred
 
+def add_future_classes(df, target="CO(GT)"):
+    """
+    Creates future classification targets:
+        CO_class_t1, CO_class_t6, CO_class_t12, CO_class_t24
+    based on discretised CO(GT).
+
+    Returns updated DataFrame.
+    """
+    df = df.copy()
+    bins = [-np.inf, 1.5, 2.5, np.inf]
+    labels = ['low', 'mid', 'high']
+
+    for k in [1, 6, 12, 24]:
+        shifted = df[target].shift(-k)
+        df[f"CO_class_t{k}"] = pd.cut(shifted, bins=bins, labels=labels)
+
+    return df
