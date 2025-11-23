@@ -108,6 +108,23 @@ def train_forecast_linear_regression(df, target, targets, df_unnormalised=None, 
             tick.set_rotation(45)
             tick.set_ha('right')
 
+        importance_table_h = linear_regression_feature_importance(
+            train_valid, features, f"{target}_future_{h}h"
+        )
+
+        # Compute feature importance
+        importance_table_h = linear_regression_feature_importance(
+            train_valid, features, f"{target}_future_{h}h"
+        )
+        
+        # Store all results for this horizon
+        results[h] = {
+            "y_test": y_test,
+            "y_pred": y_pred,
+            "rmse": rmse,
+            "importance_table": importance_table_h
+        }
+
     # Hide empty subplots if any
     for j in range(i+1, len(axes_res)):
         axes_res[j].axis('off')
@@ -119,3 +136,37 @@ def train_forecast_linear_regression(df, target, targets, df_unnormalised=None, 
     plt.show()
 
     return results
+
+def linear_regression_feature_importance(df, features, target):
+    # Drop rows with missing values in any selected column
+    data = df[features + [target]].dropna()
+
+    X = data[features]
+    y = data[target]
+
+    # Fit LR
+    model = LinearRegression()
+    model.fit(X, y)
+
+    # Raw coefficients
+    raw_coef = model.coef_
+
+    # Standard deviations for standardisation
+    std_x = X.std()
+    std_y = y.std()
+
+    # Standardised coefficients
+    std_coef = raw_coef * (std_x / std_y)
+
+    # Build DataFrame
+    importance_df = pd.DataFrame({
+        "standardised_importance": std_coef
+    })
+
+    # Sort by importance (absolute standardised coefficient)
+    importance_df["abs_importance"] = importance_df["standardised_importance"].abs()
+    importance_df = importance_df.sort_values("abs_importance", ascending=False)
+
+    importance_df = importance_df.drop(columns=["standardised_importance"])
+
+    return importance_df
