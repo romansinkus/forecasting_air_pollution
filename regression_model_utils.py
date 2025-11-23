@@ -37,8 +37,7 @@ def train_forecast_random_forest(df, target, targets, horizons=[1,6,12,24],
         random_state=random_state
     ).fit(full_X_train, full_y_train).predict(full_X_train)
     train_rmse = root_mean_squared_error(full_y_train, y_train_pred)
-    train_rel_rmse = train_rmse / full_y_train.mean()
-    print(f"Training RMSE for {target} = {train_rmse:.3f}, Relative = {train_rel_rmse:.3f}")
+    print(f"Training RMSE for {target} = {train_rmse:.3f}")
 
     # Prepare grids
     n_h = len(horizons)
@@ -89,16 +88,6 @@ def train_forecast_random_forest(df, target, targets, horizons=[1,6,12,24],
             "relative_rmse": rel_rmse
         }
 
-        # Naive baseline vs Observed 
-        y_naive = y_test.shift(h).dropna() 
-        common_idx = y_test.index.intersection(y_naive.index) 
-        y_test_aligned = y_test.loc[common_idx] 
-        y_naive_aligned = y_naive.loc[common_idx] 
-
-        # RMSE for naive baseline 
-        naive_rmse = root_mean_squared_error(y_test_aligned, y_naive_aligned) 
-        naive_rel_rmse = naive_rmse / y_test_aligned.mean() 
-    
         # -------------------------
         # Residuals in grid
         # -------------------------
@@ -111,7 +100,7 @@ def train_forecast_random_forest(df, target, targets, horizons=[1,6,12,24],
 
         axes_res[i].text(
             0.95, 0.95,
-            f"RF Rel RMSE={rel_rmse:.3f}\nNaive Rel RMSE={naive_rel_rmse:.3f}",
+            f"RF RMSE={rmse:.3f}\n",
             transform=axes_res[i].transAxes,
             ha='right', va='top',
             fontsize=11,
