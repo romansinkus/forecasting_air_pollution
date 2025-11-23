@@ -89,9 +89,7 @@ def train_forecast_random_forest(df, target, targets, horizons=[1,6,12,24],
             "relative_rmse": rel_rmse
         }
 
-        # -------------------------
         # Residuals in grid
-        # -------------------------
         residuals = y_test - y_pred
         axes_res[i].scatter(y_test.index, residuals)
         axes_res[i].axhline(0, color='black', linewidth=1)
@@ -114,9 +112,7 @@ def train_forecast_random_forest(df, target, targets, horizons=[1,6,12,24],
         )
 
 
-        # -------------------------
         # Predicted vs Observed in grid
-        # -------------------------
         axes_ts[i].plot(y_test.index, y_test, label="Observed")
         axes_ts[i].plot(y_test.index, y_pred, label=f"Predicted")
         axes_ts[i].set_title(f"{h}h ahead Predicted vs Observed")
